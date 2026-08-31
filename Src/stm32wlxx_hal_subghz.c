@@ -78,7 +78,7 @@
        (+) SyncWordValidCallback    : callback for Synchro word valid.
        (+) HeaderValidCallback      : callback for Header valid.
        (+) HeaderErrorCallback      : callback for Header error.
-       (+) CRCErrorCallback         : callback for CRC Error.
+       (+) CRCErrorCallback         : callback for Reception Error.
        (+) RxTxTimeoutCallback      : callback for Rx Tx Timeout.
        (+) MspInitCallback          : callback for Msp Init.
        (+) MspDeInitCallback        : callback for Msp DeInit.
@@ -100,7 +100,7 @@
        (+) SyncWordValidCallback    : callback for Synchro word valid.
        (+) HeaderValidCallback      : callback for Header valid.
        (+) HeaderErrorCallback      : callback for Header error.
-       (+) CRCErrorCallback         : callback for CRC Error.
+       (+) CRCErrorCallback         : callback for Reception error.
        (+) RxTxTimeoutCallback      : callback for Rx Tx Timeout.
        (+) MspInitCallback          : callback for Msp Init.
        (+) MspDeInitCallback        : callback for Msp DeInit.
@@ -1469,21 +1469,7 @@ void HAL_SUBGHZ_IRQHandler(SUBGHZ_HandleTypeDef *hsubghz)
 #endif /* USE_HAL_SUBGHZ_REGISTER_CALLBACKS */
   }
 
-  /* Packet received Interrupt */
-  if ((SUBGHZ_CHECK_IT_SOURCE(itsource, SUBGHZ_IT_RX_CPLT) != RESET))
-  {
-    if (SUBGHZ_CHECK_IT_SOURCE(itsource, SUBGHZ_IT_CRC_ERROR) != RESET)
-    {
-      hsubghz->ErrorCode |= HAL_SUBGHZ_ERROR_CRC_MISMATCH;
-    }
-#if (USE_HAL_SUBGHZ_REGISTER_CALLBACKS == 1U)
-    hsubghz->RxCpltCallback(hsubghz);
-#else
-    HAL_SUBGHZ_RxCpltCallback(hsubghz);
-#endif /* USE_HAL_SUBGHZ_REGISTER_CALLBACKS */
-  }
-
-  /* Wrong CRC received Interrupt */
+  /* Reception error interrupt */
   if (SUBGHZ_CHECK_IT_SOURCE(itsource, SUBGHZ_IT_CRC_ERROR) != RESET)
   {
 #if (USE_HAL_SUBGHZ_REGISTER_CALLBACKS == 1U)
@@ -1492,6 +1478,20 @@ void HAL_SUBGHZ_IRQHandler(SUBGHZ_HandleTypeDef *hsubghz)
     HAL_SUBGHZ_CRCErrorCallback(hsubghz);
 #endif /* USE_HAL_SUBGHZ_REGISTER_CALLBACKS */
   }
+  else
+  {
+    /* Packet received Interrupt */
+    if ((SUBGHZ_CHECK_IT_SOURCE(itsource, SUBGHZ_IT_RX_CPLT) != RESET))
+    {
+#if (USE_HAL_SUBGHZ_REGISTER_CALLBACKS == 1U)
+     hsubghz->RxCpltCallback(hsubghz);
+#else
+     HAL_SUBGHZ_RxCpltCallback(hsubghz);
+#endif /* USE_HAL_SUBGHZ_REGISTER_CALLBACKS */
+    }
+  }
+
+
 
   /* Channel activity detection finished Interrupt */
   if (SUBGHZ_CHECK_IT_SOURCE(itsource, SUBGHZ_IT_CAD_DONE) != RESET)
@@ -1637,7 +1637,7 @@ __weak void HAL_SUBGHZ_HeaderErrorCallback(SUBGHZ_HandleTypeDef *hsubghz)
 }
 
 /**
-  * @brief  Wrong CRC received callback.
+  * @brief  Reception error callback (not only CRC), use Get_PacketStatus() for details.
   * @param  hsubghz pointer to a SUBGHZ_HandleTypeDef structure that contains
   *               the configuration information for SUBGHZ module.
   * @retval None
